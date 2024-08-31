@@ -26,34 +26,22 @@ class PlayerJoin(Update):
     player: PlayerNetModel
 
 
-class ChunkLoad(Update):
-    update_type = 2
-    
-    chunk: ChunkNetModel
-
-
-class EntitySpawn(Update):
-    update_type = 3
-
-    entity: EntityNetModel
-
-
 class PlayerMove(Update):
-    update_type = 4
+    update_type = 2
 
     position: tuple[int, int]
     player_id: int
 
 
 class InventoryUpdate(Update):
-    update_type = 5
+    update_type = 3
 
     player_id: int
     inventory: InventoryNetModel
 
 
 class StructureDamage(Update):
-    update_type = 6
+    update_type = 4
 
     power: int
     position: tuple[int, int]
@@ -61,7 +49,7 @@ class StructureDamage(Update):
  
  
 class StructureDestroy(Update):
-    update_type = 7
+    update_type = 5
 
     position: tuple[int, int]
 
@@ -73,12 +61,10 @@ class UpdatesFactory:
         self.data = {
             0: Callback,
             1: PlayerJoin,
-            2: ChunkLoad,
-            3: EntitySpawn,
-            4: PlayerMove,
-            5: InventoryUpdate,
-            6: StructureDamage,
-            7: StructureDestroy,
+            2: PlayerMove,
+            3: InventoryUpdate,
+            4: StructureDamage,
+            5: StructureDestroy
         }
 
     def from_dict(self, update_dict: dict) -> Update:        

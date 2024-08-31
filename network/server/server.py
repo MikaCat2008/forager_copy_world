@@ -18,13 +18,16 @@ class BaseServer:
     def __call__(self, connection: socket.socket, update: Update) -> Any:
         data = update.model_dump()
         lock = self.locks.get(id(connection))
-        
+
         with lock:
-            connection.sendall(
-                json.dumps({
-                    "type": update.update_type,
-                    "data": data
-                }).encode() + b"\n"
-            )
-        
+            try:
+                connection.sendall(
+                    json.dumps({
+                        "type": update.update_type,
+                        "data": data
+                    }).encode() + b"\n"
+                )
+            except ConnectionError:
+                ...
+
             time.sleep(0.01)

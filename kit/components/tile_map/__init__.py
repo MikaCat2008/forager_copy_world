@@ -114,7 +114,7 @@ class TileMapData:
         tile = self.get_tile(position)
         tile.set_value(value, z_index, layer_id)
 
-    def remove_texture_id(self, z_index: int, layer_id: int, position: Position) -> None:
+    def remove_value(self, z_index: int, layer_id: int, position: Position) -> None:
         tile = self.get_tile(position)
         tile.remove_value(z_index, layer_id)
 

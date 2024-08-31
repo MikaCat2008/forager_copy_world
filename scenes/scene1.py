@@ -23,8 +23,6 @@ from network.models import (
 )
 from network.updates import (
     PlayerJoin,
-    ChunkLoad,
-    EntitySpawn,
     PlayerMove,
     InventoryUpdate,
     StructureDamage,
@@ -38,7 +36,7 @@ from net_manager import ClientNetManager
 
 from world import Chunk, Layer, WorldController, CHUNK_SIZE, start_thread
 from player import PlayerController
-# from crafting import CraftingManager
+from crafting import CraftingMenuController
 from inventory import Inventory, InventoryController
 
 
@@ -105,6 +103,10 @@ class Scene1(Scene):
             if player.model.player.player_id == self.player.model.player.player_id
         ][0]
 
+        self.crafting_menu = CraftingMenuController(
+            self.camera, self.player.inventory, resources_manager
+        )
+
         for position in [(x, y) for x in range(8) for y in range(6)]:
             start_thread(self.world.net_load_chunk, position)
 
@@ -162,6 +164,8 @@ class Scene1(Scene):
         if position != self.world.view.position:
             self.world.view.offset(vector2tuple(position))
 
+        self.crafting_menu.update()
+
     def draw(self) -> None:
         super().draw()
 
@@ -171,6 +175,7 @@ class Scene1(Scene):
             player.draw(self.camera)
 
         self.player.inventory.draw(self.camera)
+        self.crafting_menu.draw(self.camera)
 
         fps = f"{self.game.clock.get_fps():.2f} fps"
         zoom = f"{self.camera.zoom:.2f} zoom"

@@ -19,8 +19,6 @@ from network.methods import (
 )
 from network.updates import (
     PlayerJoin,
-    ChunkLoad,
-    EntitySpawn,
     PlayerMove,
     InventoryUpdate,
     StructureDamage,
@@ -37,24 +35,6 @@ class Server(BaseServer):
         return self(connection,
             PlayerJoin(
                 player=player
-            )
-        )
-    
-    def chunk_load(self, connection: socket.socket, 
-        chunk: ChunkNetModel
-    ) -> None:
-        return self(connection,
-            ChunkLoad(
-                chunk=chunk
-            )
-        )
-    
-    def entity_spawn(self, connection: socket.socket, 
-        entity: EntityNetModel
-    ) -> None:
-        return self(connection,
-            EntitySpawn(
-                entity=entity
             )
         )
     
@@ -115,18 +95,18 @@ def on_join_server(method: JoinServer) -> PlayerNetModel:
         player_id=len(players), 
         inventory=InventoryNetModel(
             data=[
-                (1, 0),
-                (1, 1),
-                (1, 2),
-                (1, 3),
-                (1, 4),
-                (1, 5),
+                (32, 0),
+                (32, 1),
+                (0, None),
+                (0, None),
+                (0, None),
+                (0, None),
                 (0, None),
                 (0, None),
                 (0, None),
                 (0, None)
             ], 
-            selected_slot_id=5
+            selected_slot_id=1
         )
     )
 

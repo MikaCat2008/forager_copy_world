@@ -42,15 +42,18 @@ class Inventory:
         ]
 
     @classmethod
-    def from_data(cls, data: list[tuple[int, Optional[int]]]) -> Inventory:
-        inventory = cls(len(data))
+    def from_data(cls, data: list[tuple[int, Optional[int]]], size: Optional[int] = None) -> Inventory:
+        if size:
+            inventory = cls(size)
+        else:
+            inventory = cls(len(data))
 
         for slot, (count, item_type) in zip(inventory.slots, data):
             slot.count = count
             slot.item_type = item_type
         
         return inventory
-
+    
 
 class InventoryModel:
     controller: InventoryController
@@ -107,14 +110,14 @@ class InventoryView:
     def __init__(
         self, 
         controller: InventoryController,
-        resource_manager: ResourcesManager
+        resources_manager: ResourcesManager
     ) -> None:
         self.controller = controller
-        self.resource_manager = resource_manager
+        self.resource_manager = resources_manager
 
         self.tile_map = TileMapComponent(
             (controller.model.inventory.size, 1), 
-            resource_manager.textures
+            resources_manager.textures
         )
         self.tile_map.data.add_layer(0)
         self.tile_map.data.add_layer(0)
@@ -129,20 +132,22 @@ class InventoryView:
     
     def render_slot(self, slot: Slot) -> None:
         slot_id = slot.slot_id
+        position = slot_id, 0
 
         if slot.item_type is None:
-            self.tile_map.data.remove_texture_id(0, 1, (slot_id, 0))
-        else:            
+            self.tile_map.data.set_value("", 0, 2, position)
+            self.tile_map.data.remove_value(0, 1, position)
+        else:
             item_info = self.resource_manager.items_info[slot.item_type]
             texture_id = item_info.texture_id
 
-            self.tile_map.data.set_value(texture_id, 0, 1, (slot_id, 0))
-            self.tile_map.data.set_value(str(slot.count), 0, 2, (slot_id, 0))
+            self.tile_map.data.set_value(texture_id, 0, 1, position)
+            self.tile_map.data.set_value(str(slot.count), 0, 2, position)
     
         if slot_id == self.controller.model.inventory.selected_slot_id:
-            self.tile_map.data.set_value(31, 0, 0, (slot.slot_id, 0))
+            self.tile_map.data.set_value(31, 0, 0, position)
         else:
-            self.tile_map.data.set_value(30, 0, 0, (slot.slot_id, 0))
+            self.tile_map.data.set_value(30, 0, 0, position)
 
     def draw(self, camera: Camera) -> None:
         _, sh = Vector2(camera.scene.game.screen.get_size())
@@ -189,13 +194,13 @@ class InventoryController:
             self.model.inventory.selected_slot_id = None
         else:
             self.model.inventory.selected_slot_id = slot_id
-        
+
         self.view.render_slot(self.model.inventory.slots[slot_id])
 
         if prev_selected_slot_id is not None:
             self.view.render_slot(self.model.inventory.slots[prev_selected_slot_id])
 
-    def todict(self) -> dict[int, int]:
+    def total_items(self) -> dict[int, int]:
         items = defaultdict(int)
         
         for slot in self.model.inventory.slots:
