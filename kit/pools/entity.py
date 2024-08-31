@@ -1,0 +1,3 @@
+class PoolEntity:
+    def delete(self) -> None:
+        ...
