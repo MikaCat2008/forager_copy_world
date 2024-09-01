@@ -14,7 +14,8 @@ from network.methods import (
     UpdateInventory,
     DamageStructure,
     DestroyStructure,
-    GetPlayers
+    GetPlayers,
+    PlaceStructure
 )
 
 
@@ -72,4 +73,12 @@ class Client(BaseClient):
     def get_players(self) -> list[PlayerNetModel]:
         return self(
             GetPlayers()
+        )
+
+    def place_structure(self, position: tuple[int, int], structure_type: int) -> None:
+        return self(
+            PlaceStructure(
+                position=position,
+                structure_type=structure_type
+            )
         )

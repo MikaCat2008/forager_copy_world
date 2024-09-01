@@ -195,10 +195,19 @@ class InventoryController:
         else:
             self.model.inventory.selected_slot_id = slot_id
 
-        self.view.render_slot(self.model.inventory.slots[slot_id])
+        if slot_id is not None:
+            self.view.render_slot(self.model.inventory.slots[slot_id])
 
         if prev_selected_slot_id is not None:
             self.view.render_slot(self.model.inventory.slots[prev_selected_slot_id])
+
+    def get_selected_slot(self) -> Optional[Slot]:
+        selected_slot_id = self.model.inventory.selected_slot_id
+
+        if selected_slot_id is None:
+            return
+        
+        return self.model.inventory.slots[selected_slot_id]
 
     def total_items(self) -> dict[int, int]:
         items = defaultdict(int)

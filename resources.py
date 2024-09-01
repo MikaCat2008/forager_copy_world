@@ -7,21 +7,51 @@ from kit.content import Content
 
 class ItemInfo:
     name: str
-    recipe: Optional[dict[int, int]]
     item_type: int
     texture_id: int
-    
+
+    recipe: Optional[dict[int, int]]
+    axe_power: int
+    pickaxe_power: int
+    place_structure: int
+
     def __init__(
         self, 
         name: str, 
         item_type: int,
         texture_id: int,
-        recipe: Optional[dict[int]] = None
+        recipe: Optional[dict[int]] = None,
+        axe_power: int = 0,
+        pickaxe_power: int = 0,
+        place_structure: int = 0
     ) -> None:
         self.name = name
-        self.recipe = recipe
         self.item_type = item_type
         self.texture_id = texture_id
+        
+        self.recipe = recipe
+        self.axe_power = axe_power
+        self.pickaxe_power = pickaxe_power
+        self.place_structure = place_structure
+
+
+class StructureInfo:
+    structure_type: int
+    drop_items: Optional[dict[int, int]]
+    min_axe_power: Optional[int]
+    min_pickaxe_power: Optional[int]
+
+    def __init__(
+        self, 
+        structure_type: int,
+        drop_items: Optional[dict[int, int]] = None,
+        min_axe_power: int = 0,
+        min_pickaxe_power: int = 0
+    ) -> None:
+        self.structure_type = structure_type
+        self.drop_items = drop_items
+        self.min_axe_power = min_axe_power
+        self.min_pickaxe_power = min_pickaxe_power
 
 
 class ResourcesManager:
@@ -65,7 +95,7 @@ class ResourcesManager:
                 11, 10,  7,  6,  8,  9,  4,  5
             ]
         }
-        self.sctructures_rules = {
+        self.structures_rules = {
             1: [[17], [16]],
             2: [[19], [18]],
             3: [[20]],
@@ -79,18 +109,93 @@ class ResourcesManager:
         }
 
         self.items_info = [
-            ItemInfo("Wood", 0, 36),
-            ItemInfo("Stone", 1, 40),
             ItemInfo(
-                "Wooden pickaxe", 2, 37, { 0: 12 }
+                name="Wood", 
+                item_type=0, 
+                texture_id=36
             ),
             ItemInfo(
-                "Wooden axe", 3, 38, { 0: 10 }
+                name="Stone", 
+                item_type=1, 
+                texture_id=40
             ),
             ItemInfo(
-                "Stone pickaxe", 4, 41, { 0: 4, 1: 12 }
+                name="Wooden pickaxe", 
+                item_type=2, 
+                texture_id=37, 
+                recipe={ 0: 12 },
+                pickaxe_power=1
             ),
             ItemInfo(
-                "Stone axe", 5, 42, { 0: 4, 1: 10 }
+                name="Wooden axe", 
+                item_type=3, 
+                texture_id=38, 
+                recipe={ 0: 10 },
+                axe_power=2
+            ),
+            ItemInfo(
+                name="Stone pickaxe", 
+                item_type=4, 
+                texture_id=41, 
+                recipe={ 0: 4, 1: 12 },
+                pickaxe_power=2
+            ),
+            ItemInfo(
+                name="Stone axe", 
+                item_type=5, 
+                texture_id=42, 
+                recipe={ 0: 4, 1: 10 },
+                axe_power=3
+            ),
+            ItemInfo(
+                name="Bridge",
+                item_type=6,
+                texture_id=27,
+                recipe={ 0: 20 },
+                place_structure=10
+            )
+        ]
+        self.structures_info = [None,
+            StructureInfo(
+                structure_type=1,
+                drop_items={ 0: 2 },
+                min_axe_power=1
+            ),
+            StructureInfo(
+                structure_type=2,
+                drop_items={ 0: 3 },
+                min_axe_power=1
+            ),
+            StructureInfo(
+                structure_type=3
+            ),
+            StructureInfo(
+                structure_type=4
+            ),
+            StructureInfo(
+                structure_type=5
+            ),
+            StructureInfo(
+                structure_type=6
+            ),
+            StructureInfo(
+                structure_type=7,
+                drop_items={ 1: 1 },
+                min_pickaxe_power=1
+            ),
+            StructureInfo(
+                structure_type=8,
+                drop_items={ 1: 2 },
+                min_pickaxe_power=1
+            ),
+            StructureInfo(
+                structure_type=9,
+                drop_items={ 0: 4 },
+                min_axe_power=2
+            ),
+            StructureInfo(
+                structure_type=10,
+                drop_items={ 0: 20 },
+                min_axe_power=1
             )
         ]

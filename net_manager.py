@@ -100,6 +100,9 @@ class ClientNetManager:
     ) -> None:
         self.client.update_inventory(player_id, inventory_data, selected_slot_id)
 
+    def destroy_structure(self, position: tuple[int, int]) -> None:
+        self.client.destroy_structure(position)
+
     def get_players(self) -> list[PlayerController]:
         player_net_models = self.client.get_players()
         
@@ -107,3 +110,6 @@ class ClientNetManager:
             self.net_model_adapter.adapt_player(player_net_model) 
             for player_net_model in player_net_models
         ]
+    
+    def place_structure(self, position: tuple[int, int], structure_type: int) -> None:
+        self.client.place_structure(position, structure_type)

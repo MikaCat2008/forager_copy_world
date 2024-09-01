@@ -59,6 +59,13 @@ class GetPlayers(Method):
     return_type = list[PlayerNetModel]
 
 
+class PlaceStructure(Method):
+    method_type = 7
+    
+    position: tuple[int, int]
+    structure_type: int
+
+
 class MethodsFactory:
     data: dict[int, type[Method]]
 
@@ -70,7 +77,8 @@ class MethodsFactory:
             3: UpdateInventory,
             4: DamageStructure,
             5: DestroyStructure,
-            6: GetPlayers
+            6: GetPlayers,
+            7: PlaceStructure
         }
 
     def from_dict(self, method_dict: dict) -> Method:

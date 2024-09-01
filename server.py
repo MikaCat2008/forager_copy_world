@@ -15,14 +15,16 @@ from network.methods import (
     UpdateInventory,
     DamageStructure,
     DestroyStructure,
-    GetPlayers
+    GetPlayers,
+    PlaceStructure
 )
 from network.updates import (
     PlayerJoin,
     PlayerMove,
     InventoryUpdate,
     StructureDamage,
-    StructureDestroy
+    StructureDestroy,
+    StructurePlace
 )
 
 from world import WorldData, WorldGenerationManager
@@ -81,6 +83,17 @@ class Server(BaseServer):
                 position=position
             )
         )
+    
+    def structure_place(self, connection: socket.socket,
+        position: tuple[int, int],
+        structure_type: int                    
+    ) -> None:
+        return self(connection,
+            StructurePlace(
+                position=position,
+                structure_type=structure_type
+            )            
+        )
 
 
 server = Server()
@@ -95,8 +108,8 @@ def on_join_server(method: JoinServer) -> PlayerNetModel:
         player_id=len(players), 
         inventory=InventoryNetModel(
             data=[
-                (32, 0),
-                (32, 1),
+                (999, 0),
+                (999, 1),
                 (0, None),
                 (0, None),
                 (0, None),
@@ -154,9 +167,25 @@ def on_update_inventory(method: UpdateInventory) -> None:
         server.inventory_update(connection, method.player_id, inventory)
 
 
+@dp.on(DestroyStructure)
+def on_damage_structure(method: DestroyStructure) -> None:
+    world.set_structure_type(method.position, 0)
+    
+    for connection in dp.connections:
+        server.structure_destroy(connection, method.position)
+
+
 @dp.on(GetPlayers)
 def on_get_players(method: GetPlayers) -> list[PlayerNetModel]:
     return players
+
+
+@dp.on(PlaceStructure)
+def on_place_structure(method: PlaceStructure) -> None:
+    world.set_structure_type(method.position, method.structure_type)
+    
+    for connection in dp.connections:
+        server.structure_place(connection, method.position, method.structure_type)
 
 
 world = WorldData()

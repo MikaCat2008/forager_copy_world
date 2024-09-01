@@ -54,6 +54,13 @@ class StructureDestroy(Update):
     position: tuple[int, int]
 
 
+class StructurePlace(Update):
+    update_type = 6
+
+    position: tuple[int, int]
+    structure_type: int
+
+
 class UpdatesFactory:
     data: dict[int, type[Update]]
 
@@ -64,7 +71,8 @@ class UpdatesFactory:
             2: PlayerMove,
             3: InventoryUpdate,
             4: StructureDamage,
-            5: StructureDestroy
+            5: StructureDestroy,
+            6: StructurePlace
         }
 
     def from_dict(self, update_dict: dict) -> Update:        

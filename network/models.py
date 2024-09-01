@@ -15,7 +15,7 @@ class EntityNetModel(BaseModel):
 
 class InventoryNetModel(BaseModel):
     data: list[tuple[int, Optional[int]]]
-    selected_slot_id: int
+    selected_slot_id: Optional[int]
 
 
 class PlayerNetModel(EntityNetModel):

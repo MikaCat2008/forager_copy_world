@@ -11,7 +11,7 @@ from pygame.display import set_caption
 
 from kit.math import vector2tuple
 from kit.scene import Scene
-from kit.input import Keyboard
+from kit.input import Mouse, Keyboard
 from kit.graphics import Color, Camera
 
 from network.client import ClientDispatcher
@@ -26,7 +26,8 @@ from network.updates import (
     PlayerMove,
     InventoryUpdate,
     StructureDamage,
-    StructureDestroy
+    StructureDestroy,
+    StructurePlace
 )
 
 from client import Client
@@ -38,6 +39,117 @@ from world import Chunk, Layer, WorldController, CHUNK_SIZE, start_thread
 from player import PlayerController
 from crafting import CraftingMenuController
 from inventory import Inventory, InventoryController
+
+
+class PlacingManager:
+    world: WorldController
+    camera: Camera
+    player: PlayerController
+    net_manager: ClientNetManager
+    resources_manager: ResourcesManager
+
+    def __init__(
+        self,
+        world: WorldController,
+        camera: Camera,
+        player: PlayerController,
+        net_manager: ClientNetManager,
+        resources_manager: ResourcesManager
+    ) -> None:
+        self.world = world
+        self.camera = camera
+        self.player = player
+        self.net_manager = net_manager
+        self.resources_manager = resources_manager
+    
+    def update(self) -> None:
+        cursor_position = vector2tuple(self.camera.get_mouse_position() // 32)
+    
+        if not Mouse.get_clicked(2):
+            return
+        
+        if not self.world.model.data.is_position_inside(cursor_position):
+            return
+         
+        structure_type = self.world.get_structure_type(cursor_position)
+        
+        if structure_type != 0:
+            return
+        
+        slot = self.player.inventory.get_selected_slot()
+        
+        if slot is None or slot.item_type is None:
+            return
+        
+        item_info = self.resources_manager.items_info[slot.item_type]
+
+        if not item_info.place_structure:
+            return
+        
+        self.player.inventory.remove_item_type(1, slot.item_type)
+
+        start_thread(self.world.net_place_structure, cursor_position, item_info.place_structure)
+
+
+class DestroyingManager:
+    world: WorldController
+    camera: Camera
+    player: PlayerController
+    net_manager: ClientNetManager
+    resources_manager: ResourcesManager
+
+    def __init__(
+        self,
+        world: WorldController,
+        camera: Camera,
+        player: PlayerController,
+        net_manager: ClientNetManager,
+        resources_manager: ResourcesManager
+    ) -> None:
+        self.world = world
+        self.camera = camera
+        self.player = player
+        self.net_manager = net_manager
+        self.resources_manager = resources_manager
+    
+    def update(self) -> None:
+        cursor_position = vector2tuple(self.camera.get_mouse_position() // 32)
+    
+        if not Mouse.get_clicked(0):
+            return
+        
+        if not self.world.model.data.is_position_inside(cursor_position):
+            return
+         
+        structure_type = self.world.get_structure_type(cursor_position)
+        
+        if structure_type == 0:
+            return
+            
+        slot = self.player.inventory.get_selected_slot()
+        
+        if slot is None or slot.item_type is None:
+            axe_power = 1
+            pickaxe_power = 0
+        else:
+            item_info = self.resources_manager.items_info[slot.item_type]
+
+            axe_power = item_info.axe_power
+            pickaxe_power = item_info.pickaxe_power
+
+        structure_info = self.resources_manager.structures_info[structure_type]
+
+        if axe_power < structure_info.min_axe_power:
+            return
+
+        if pickaxe_power < structure_info.min_pickaxe_power:
+            return
+        
+        if structure_info.drop_items:
+            for item_type, count in structure_info.drop_items.items():
+                self.player.inventory.add_item_type(count, item_type)
+
+        start_thread(self.world.net_destroy_structure, cursor_position)
 
 
 class Scene1(Scene):
@@ -62,6 +174,7 @@ class Scene1(Scene):
         )
         self.world = WorldController(self.net_manager, resources_manager)
         self.player = None
+        self.players = []
 
         @self.dispatcher.on(PlayerJoin)
         def on_player_join(update: PlayerJoin) -> None:
@@ -74,6 +187,9 @@ class Scene1(Scene):
             if self.player is not None and update.player_id == self.player.model.player.player_id:
                 return
 
+            if not self.players:
+                return
+
             player = [
                 player for player in self.players if player.model.player.player_id == update.player_id
             ][0]
@@ -84,6 +200,9 @@ class Scene1(Scene):
         def on_inventory_update(update: InventoryUpdate) -> None:
             if self.player is not None and update.player_id == self.player.model.player.player_id:
                 return
+            
+            if not self.players:
+                return
 
             player = [
                 player for player in self.players if player.model.player.player_id == update.player_id
@@ -93,9 +212,17 @@ class Scene1(Scene):
 
             player.set_inventory(inventory)
 
+        @self.dispatcher.on(StructureDestroy)
+        def on_structure_destroy(update: StructureDestroy) -> None:
+            self.world.set_structure_type(update.position, 0)
+
+        @self.dispatcher.on(StructurePlace)
+        def on_structure_place(update: StructurePlace) -> None:
+            self.world.set_structure_type(update.position, update.structure_type)
+
         start_thread(self.dispatcher.run)
 
-        self.players = self.net_manager.get_players()
+        self.players += self.net_manager.get_players()
         self.player = self.net_manager.join_server()
 
         self.player = [
@@ -105,6 +232,20 @@ class Scene1(Scene):
 
         self.crafting_menu = CraftingMenuController(
             self.camera, self.player.inventory, resources_manager
+        )
+        self.placing_manager = PlacingManager(
+            self.world, 
+            self.camera, 
+            self.player, 
+            self.net_manager, 
+            resources_manager
+        )
+        self.destroying_manager = DestroyingManager(
+            self.world, 
+            self.camera, 
+            self.player, 
+            self.net_manager, 
+            resources_manager
         )
 
         for position in [(x, y) for x in range(8) for y in range(6)]:
@@ -152,12 +293,6 @@ class Scene1(Scene):
         if Keyboard.get_clicked(pg.K_0):
             self.player.inventory.set_selected_slot_id(9)
 
-        if self.game.ticks % 5 == 0:
-            start_thread(self.player.net_move)
-            
-        if self.game.ticks % 20 == 0:
-            start_thread(self.player.inventory.net_update, self.player.model.player.player_id)
-
         position = self.camera.position // self.world.view.tile_map.renderer.tile_size // CHUNK_SIZE
         position -= Vector2(3, 2)
 
@@ -165,6 +300,14 @@ class Scene1(Scene):
             self.world.view.offset(vector2tuple(position))
 
         self.crafting_menu.update()
+        self.placing_manager.update()
+        self.destroying_manager.update()
+
+        if self.game.ticks % 5 == 0:
+            start_thread(self.player.net_move)
+            
+        if self.game.ticks % 20 == 0:
+            start_thread(self.player.inventory.net_update, self.player.model.player.player_id)
 
     def draw(self) -> None:
         super().draw()

@@ -159,10 +159,13 @@ class WorldModel:
 
         self.data = WorldData()
 
-    def set_block_type(self, position: tuple[int, int], block_type: int) -> None:
+    def get_structure_type(self, position: Position) -> int:
+        return self.data.get_structure_type(position)
+
+    def set_block_type(self, position: Position, block_type: int) -> None:
         self.data.set_block_type(position, block_type)
 
-    def set_structure_type(self, position: tuple[int, int], structure_type: int) -> None:
+    def set_structure_type(self, position: Position, structure_type: int) -> None:
         self.data.set_structure_type(position, structure_type)
 
 
@@ -228,14 +231,14 @@ class StructuresManager:
         self.tile_map = tile_map
         
         self.structures = Layer.filled(0, size=self.size)
-        self.structures_rules = resources_manager.sctructures_rules
+        self.structures_rules = resources_manager.structures_rules
 
     def set_structure_type(self, position: tuple[int, int], structure_type: int) -> None:
         prev_structure_type = self.structures[position]
-        
+
         if structure_type == prev_structure_type:
             return
-
+        
         if structure_type == 0:
             self.remove_structure_type(position, prev_structure_type)
         else:
@@ -393,15 +396,26 @@ class WorldController:
         self.model.data.load_chunks(chunks)
         self.view.render_chunks(chunks)
 
-    def set_block_type(self, position: tuple[int, int], block_type: int) -> None:
+    def get_structure_type(self, position: Position) -> int:
+        return self.model.get_structure_type(position)
+
+    def set_block_type(self, position: Position, block_type: int) -> None:
         self.view.set_block_type(position, block_type)
         self.model.set_block_type(position, block_type)
 
-    def set_structure_type(self, position: tuple[int, int], structure_type: int) -> None:
-        self.view.set_structure_type(position, structure_type)
+    def set_structure_type(self, position: Position, structure_type: int) -> None:
+        x, y = position
+        vx, vy = self.view.position
+        rx, ry = x - vx * CHUNK_SIZE, y - vy * CHUNK_SIZE
+
+        w, h = self.view.tile_map.size
+
+        if 0 <= rx < w and 0 <= ry < h:
+            self.view.set_structure_type((rx, ry), structure_type)
+        
         self.model.set_structure_type(position, structure_type)
 
-    def net_load_chunk(self, position: tuple[int, int]) -> None:
+    def net_load_chunk(self, position: Position) -> None:
         chunk = self.net_manager.load_chunk(position)
 
         if chunk is None:
@@ -409,6 +423,12 @@ class WorldController:
 
         with self.net_manager.client.lock:
             self.load_chunks([chunk])
+
+    def net_destroy_structure(self, position: Position) -> None:
+        self.net_manager.destroy_structure(position)
+
+    def net_place_structure(self, position: Position, structure_type: int) -> None:
+        self.net_manager.place_structure(position, structure_type)
 
     def draw(self, camera: Camera) -> None:
         self.view.draw(camera)
