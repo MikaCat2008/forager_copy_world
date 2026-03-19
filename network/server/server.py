@@ -11,7 +11,7 @@ class BaseServer:
 
     def __init__(self) -> None:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.bind(("25.51.236.41", 8080))
+        self.sock.bind(("localhost", 8080))
         self.sock.listen()
         self.locks = {}
 

@@ -18,7 +18,7 @@ class BaseClient:
     def __init__(self) -> None:
         self.lock = Lock()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect(("25.51.236.41", 8080))
+        self.sock.connect(("localhost", 8080))
 
         self.callbacks = {}
         self.callbacks_next_id = 0
